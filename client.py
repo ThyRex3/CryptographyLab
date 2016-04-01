@@ -1,26 +1,50 @@
 import socket
 import rsa
 import Crypto
+import uuid
+import hashlib
 from Crypto.PublicKey import RSA
-from Crypto.Hash import SHA256
+from Crypto.Hash import HMAC, SHA256
+from Crypto.Cipher impRort AES
+from Crypto import andom
 import ast
 from random import getrandbits
 import sys
 import time
 from socket import error as socket_error
 
-def RSAEnc(plaintext, publicKey):
+def RSAEnc(plainText, publicKey):
    holder = rsa.PublicKey.load_pkcs1_openssl_pem(publicKey)
-   cipherText = rsa.encrypt(plaintext, holder)
+   cipherText = rsa.encrypt(plainText, holder)
    return cipherText
 
 def RSADec(cipherText, privateKey):
    holder = rsa.PrivateKey.load_pkcs1(privateKey, "PEM")
    plaintext = rsa.decrypt(cipherText, holder)
-   return plaintext
+   return plainText
 
 def DHCalc(g, p, x):
    return ((int(g)**int(x)) % int(p))
+
+# Hashing Strings: http://pythoncentral.io/hashing-strings-with-python/
+def HashPlaintext(plainText):
+    salt = uuid.uuid4().hex
+    return hashlib.sha256(salt.encode() + plainText.encode()).hexdigest() + ':' + salt
+
+# Hashing Message with Key? : https://gist.github.com/theY4Kman/3893296
+def HMAC(key, plainText):
+    hash_obj = HMAC.new(key=key, msg=plainText, digestmod=SHA256)
+    return hash_obj.hexdigest()
+
+# Enc/Dec with AES : http://docs.python-guide.org/en/latest/scenarios/crypto/
+# key and IV are byte strings
+def AESEnc(key, plainText, iv):
+	encryption_suite = AES.new(key=key, mode=AES.MODE_CBC, IV=iv)
+	cipherText = encryption_suite.encrypt(plainText)
+
+def AESDec(key, cipherText, iv):
+	decryption_suite = AES.new(key=key, mode=AES.MODE_CBC, IV=iv)
+	plainText = decryption_suite.decrypt(cipherText)
 
 bobPrivateKey =  """-----BEGIN RSA PRIVATE KEY-----
 MIICXgIBAAKBgQDkr8IivGI753PxologDYiEG18VDRlCeNBJ9TCxlHRkVVfNTyBw
@@ -94,7 +118,17 @@ print("rec'd bob number", exponB)
 sharedSecret = DHCalc(exponB, p, DH_A)
 print "Shared secret = ", int(sharedSecret)
 
+random_generator = Random.new().read
+key = RSA.generate(1024, random_generator)
+messageToBob = ('a'*2000)
+IV = Random.new().read(32);
+encMessageToBob = AESEnc(key, messageToBob, iv)
+hash = SHA256.new(messageToBob).digest()
+signature = key.sign(hash, '')
 
 
 s.close()
 #print 'Received', repr(data)
+
+# Sources
+# https://gist.github.com/theY4Kman/3893296
