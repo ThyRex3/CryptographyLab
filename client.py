@@ -93,8 +93,8 @@ TJCV9FmE9a+HiwDhAgMBAAE=
  -----END PUBLIC KEY-----"""
 
 DH_A = 29
-BLOCK_SIZE = 16
 
+BLOCK_SIZE = 32
 PADDING = '{'
 EncodeAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
 DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
@@ -125,12 +125,24 @@ print("rec'd bob number", exponB)
 sharedSecret = DHCalc(exponB, p, DH_A)
 print "Shared secret = ", int(sharedSecret)
 
-secret = os.urandom(BLOCK_SIZE)
 secretMessage = ('a'*2000)
+# secret is used to encrypt
+secret = os.urandom(BLOCK_SIZE)
+
+# generate some key
+random_generator = Random.new().read
+key = RSA.generate(1024, random_generator)
+
+# create an AES cipher
 cipher = AES.new(secret)
+
+#cipherText
 encoded = EncodeAES(cipher, secretMessage)
-print 'Encrypted string: ', encoded
+#Hash the cipherText
 hash = SHA256.new(encoded).digest()
+#Sign the hashed cipherText
+signature = key.sign(hash, '')
+
 s.close()
 #print 'Received', repr(data)
 
