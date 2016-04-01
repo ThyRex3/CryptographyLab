@@ -1,12 +1,12 @@
 import socket
 import rsa
 import Crypto
-import uuid
-import hashlib
+import base64
+import os
 from Crypto.PublicKey import RSA
 from Crypto.Hash import HMAC, SHA256
-from Crypto.Cipher impRort AES
-from Crypto import andom
+from Crypto.Cipher import AES
+from Crypto import Random
 import ast
 from random import getrandbits
 import sys
@@ -93,6 +93,13 @@ TJCV9FmE9a+HiwDhAgMBAAE=
  -----END PUBLIC KEY-----"""
 
 DH_A = 29
+BLOCK_SIZE = 16
+
+PADDING = '{'
+EncodeAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
+DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
+
+pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * PADDING
 
 h = SHA256.new('AliceSecret').hexdigest()
 HOST = '127.0.0.1'    # The remote host
@@ -118,15 +125,12 @@ print("rec'd bob number", exponB)
 sharedSecret = DHCalc(exponB, p, DH_A)
 print "Shared secret = ", int(sharedSecret)
 
-random_generator = Random.new().read
-key = RSA.generate(1024, random_generator)
-messageToBob = ('a'*2000)
-IV = Random.new().read(32);
-encMessageToBob = AESEnc(key, messageToBob, iv)
-hash = SHA256.new(messageToBob).digest()
-signature = key.sign(hash, '')
-
-
+secret = os.urandom(BLOCK_SIZE)
+secretMessage = ('a'*2000)
+cipher = AES.new(secret)
+encoded = EncodeAES(cipher, secretMessage)
+print 'Encrypted string: ', encoded
+hash = SHA256.new(encoded).digest()
 s.close()
 #print 'Received', repr(data)
 
