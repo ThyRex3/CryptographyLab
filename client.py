@@ -14,12 +14,12 @@ import time
 from socket import error as socket_error
 
 def RSAEnc(plainText, publicKey):
-   holder = rsa.PublicKey.load_pkcs1_openssl_pem(publicKey)
+   holder = rsa.PublicKey.load_pkcs1(publicKey, 'PEM')
    cipherText = rsa.encrypt(plainText, holder)
    return cipherText
 
 def RSADec(cipherText, privateKey):
-   holder = rsa.PrivateKey.load_pkcs1(privateKey, "PEM")
+   holder = rsa.PrivateKey.load_pkcs1(privateKey, 'PEM')
    plaintext = rsa.decrypt(cipherText, holder)
    return plainText
 
@@ -35,32 +35,6 @@ def HashPlaintext(plainText):
 def HMAC(key, plainText):
     hash_obj = HMAC.new(key=key, msg=plainText, digestmod=SHA256)
     return hash_obj.hexdigest()
-
-# Enc/Dec with AES : http://docs.python-guide.org/en/latest/scenarios/crypto/
-# key and IV are byte strings
-def AESEnc(key, plainText, iv):
-	encryption_suite = AES.new(key=key, mode=AES.MODE_CBC, IV=iv)
-	cipherText = encryption_suite.encrypt(plainText)
-
-def AESDec(key, cipherText, iv):
-	decryption_suite = AES.new(key=key, mode=AES.MODE_CBC, IV=iv)
-	plainText = decryption_suite.decrypt(cipherText)
-
-bobPrivateKey =  """-----BEGIN RSA PRIVATE KEY-----
-MIICXgIBAAKBgQDkr8IivGI753PxologDYiEG18VDRlCeNBJ9TCxlHRkVVfNTyBw
-AlUqFNkLodLoNwQFKQrAQvS4d0uhMGfY7chS++qNEWa2+55yI6dYKDwkOXbyRfet
-aDiRJqvxBIUCpl9tTc0BafSfp8XDnFNtLIbVZoeiG1BX5485bHGRqhXL7QIDAQAB
-AoGAV52zHoXYiST7Oge+yesFc7/c5P7Yv6vz+XH0TwUWtt4vvpxjTCbIpE/KfHdq
-i8eQRb3cvZ6pjgc+taoLD4TCq7cpBxz476Vno9q7Wu+zyyMbWBSv+YFWm77HlBwS
-Z0Bl0G7rwdhsjhwsgHHiZOCs7E6OSvTj1A3VOm3AYsMoJK0CQQD0TjyRGpbNV/n+
-ireTtc2nz9MzbG4Du473mW+hEBJoBRX2DKaBhS/mubWEYKoiyfZOF3hZX8eW0TX2
-ec/04fnnAkEA76IfhZFl7M6GuIbwixOEfZ+1EaqjQ9IUTr8d/uSTjtDDoeQ3GW5X
-FWi0tIsYkVnNL+wtMQ2PeP3LUGtjqzOZCwJBANerRX6XaW9HbhNOZDdKtI2jQwBP
-hWNYLSLZWhlmdclMTBHVIxyN9jaJ1PtS1n81qXFQ+NZ1Xl3+vNOkv3egEhsCQQC+
-84KIzc7Zf80Mt8JwIJJgBGal+EJ3Ja02/sYpOf13PVXW6GMbqbhNAA2XHIvsLxH5
-UQrF3tdoA10C7UATyV73AkEAsyGXpS6EMmKwCe0b5YtfZ7AU+6EmZMgoTbG2YONJ
-g3EvCnfEowdQ9P9KyCUT7Fk5cvGLpLNJ+CTDTCfJYRe1Lg==
------END RSA PRIVATE KEY----- """
 
 bobPublicKey = """-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDkr8IivGI753PxologDYiEG18V
@@ -94,7 +68,9 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))
 s.sendall('Requesting RSA information')
 #data = s.recv(1024)
-s.sendall(RSAEnc(h, alicePublicKey))
+s.sendall(RSAEnc(h, bobPublicKey))
+
+AESSharedSecret = RSAEnc(h, bobPublicKey)
 
 g = int(s.recv(2))
 p = int(s.recv(2))
@@ -115,23 +91,26 @@ secretMessage = ('a'*2000)
 # secret is used to encrypt
 secret = os.urandom(BLOCK_SIZE)
 
-# generate some key
-# random_generator = Random.new().read
-# key = RSA.generate(1024, random_generator)
+print "Secret = ", secretMessage
+s.sendall(RSAEnc(secretMessage, alicePublicKey))
 
 # create an AES cipher
 cipher = AES.new(secret)
 
 #cipherText
 encoded = EncodeAES(cipher, secretMessage)
-print "Encoded: ", encoded
+print "Encoded: ", encoded, "\n encoded len = ", len(encoded), "\n"
 #Hash the cipherText
 hash = SHA256.new(encoded).digest()
 #Sign the hashed cipherText
 signature = alicePrivateKey.sign(hash, '')
 
-decoded = DecodeAES(cipher, encoded)
-print "Decoded: ", decoded
+s.sendall(encoded)
+print "sent encoded"
+s.sendall(str(signature))
+print "sent signature"
+
+time.sleep(0.01)
 
 s.close()
 #print 'Received', repr(data)

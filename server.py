@@ -21,6 +21,18 @@ def RSADec(cipherText, privateKey):
 def DHCalc(g, p, x):
    return ((int(g)**int(x)) % int(p))
 
+def AESEnc(key, plainText, iv):
+        encryption_suite = AES.new(key=key, mode=AES.MODE_CBC, IV=iv)
+        cipherText = encryption_suite.encrypt(plainText)
+
+def AESDec(key, cipherText, iv):
+        decryption_suite = AES.new(key=key, mode=AES.MODE_CBC, IV=iv)
+        plainText = decryption_suite.decrypt(cipherText)
+
+#def VerifyAndDecrypt(pubKey, hash, ciphertext):
+	
+
+
 bobPrivateKey =  """-----BEGIN RSA PRIVATE KEY-----
 MIICXgIBAAKBgQDkr8IivGI753PxologDYiEG18VDRlCeNBJ9TCxlHRkVVfNTyBw
 AlUqFNkLodLoNwQFKQrAQvS4d0uhMGfY7chS++qNEWa2+55yI6dYKDwkOXbyRfet
@@ -84,7 +96,9 @@ while not connected:
     data = conn.recv(1024)
     hash = conn.recv(10000)
     print(hash)
-    print(RSADec(hash, alicePrivateKey))
+    print(RSADec(hash, bobPrivateKey))
+  
+    AESSecret = RSADec(hash, bobPrivateKey)
 
     conn.sendall(g)
     conn.sendall(p)
@@ -95,8 +109,17 @@ while not connected:
 
     sharedSecret = DHCalc(exponA, p, DH_B)
     print "Shared secret", sharedSecret
+	
+    #receive encoded Message
+    codedMessage = conn.recv(2688)
+    print "codedMessage = ", codedMessage
+    print "\n message length = ", len(codedMessage), "\n"
+    #receive signature
+    signature = conn.recv(2048)
 
+    print "message = ", codedMessage
+    print "sig = ", signature
 
-    conn.sendall(data)
+#    conn.sendall(data)
 conn.close()
 
