@@ -95,22 +95,22 @@ def addPadding(plainText):
 	padding = 16 - len(plainText) % 16
 	pad = "1"
 	while padding > 0:
-		message += pad
+		plainText += pad
 		padding -= 1
 		pad = "0"
-	return message
+	return plainText
 
 def remPadding(padPlainText):
 	position = len(padPlainText) - 1
 	count = 0
-	while position >= 0
-		if message[position] != '1';
+	while position >= 0:
+		if padPlainText[position] != '1':
 			position -= 1
 			count += 1
 		else:
 			count += 1
 			return padPlainText[:-count]
-	return message
+	return padPlainText
 
 def AESEnc(plainText):
 	messsage = addPadding(plainText)

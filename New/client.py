@@ -86,27 +86,27 @@ def RSAEnc(plainText):
 def DHCalc(a, g, p):
 	return pow(g, a, p)
 
-# 1 followed by 0's
+# 1 followed by 0'ss
 def addPadding(plainText):
 	padding = 16 - len(plainText) % 16
 	pad = "1"
 	while padding > 0:
-		message += pad
+		plainText += pad
 		padding -= 1
 		pad = "0"
-	return message
+	return plainText
 
 def remPadding(padPlainText):
 	position = len(padPlainText) - 1
 	count = 0
-	while position >= 0
-		if message[position] != '1';
+	while position >= 0:
+		if padPlainText[position] != '1':
 			position -= 1
 			count += 1
 		else:
 			count += 1
 			return padPlainText[:-count]
-	return message
+	return padPlainText
 
 def AESEnc(plainText):
 	message = addPadding(plainText)
@@ -144,7 +144,8 @@ def RSASign(message):
 	key = RSA.importKey(alicePrivateKey)
 	hash = SHA256.new()
 	hash.update(message)
-	return signer.sign(h)
+	signer = PKCS1_PSS.new(key)
+	return signer.sign(hash)
 
 def sendMessage(plainText):
 	signature = RSASign(plainText)
@@ -168,7 +169,7 @@ pickleString = clientSocket.recv(4096)
 # (bobvalue, g, p)
 data = pickle.loads(pickleString)
 decryptKey = DH(data[0], data[1], data[2])
-print 'Encrypt Key" ', encryptKey
+print 'Encrypt Key: ', encryptKey
 print 'Decrypt Key: ', decryptKey
 
 signKey = str(os.urandom(16))
