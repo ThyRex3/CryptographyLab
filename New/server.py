@@ -90,7 +90,7 @@ def RSADec(cipherText):
 def DHCalc(b):
 	return pow(g, b, p)
 
-# 1 followed by 0's
+# 1 followed by 0'ss
 def addPadding(plainText):
 	padding = 16 - len(plainText) % 16
 	pad = "1"
@@ -113,9 +113,9 @@ def remPadding(padPlainText):
 	return padPlainText
 
 def AESEnc(plainText):
-	messsage = addPadding(plainText)
+	paddedMesssage = addPadding(plainText)
 	cipher = AES.new(encryptKey)
-	return cipher.encrypt(message)
+	return cipher.encrypt(paddedMessage)
 
 def AESDec(cipherText):
 	cipher = AES.new(decryptKey)
@@ -131,9 +131,9 @@ def verifySignature(signature, plainText):
 	hash.update(plainText)
 	verifier = PKCS1_PSS.new(key)
 	if verifier.verify(hash, signature):
-		return true
+		return True
 	else:
-		return false
+		return False
 
 def DH():
 	b = random.SystemRandom().randint(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, p-2)
@@ -151,13 +151,12 @@ def DH():
 	return returnKey
 
 def HMACSign(plainText):
-	hash = HMAC.new(signKey)
-	h.update(plainText, SHA256)
+	hash = HMAC.new(signKey, plainText, SHA256)
 	return hash.hexdigest()
 
 def sendMessage(plainText):
 	signature = HMACSign(plainText)
-	cipherText = AESEn(plainText)
+	cipherText = AESEnc(plainText)
 	data = (cipherText, signature)
 	pickleString = pickle.dumps(data, -1)
 	connectionSocket.send(pickleString)
@@ -188,4 +187,6 @@ lastMessage = connectionSocket.recv(4096)
 message = 'b' * 1000
 
 recvMessage(lastMessage)
+sendMessage(message)
+
 connectionSocket.close()

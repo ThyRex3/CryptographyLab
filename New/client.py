@@ -122,12 +122,11 @@ def DHSecretKey(value, b, p):
 	return pow(value, b, p)
 
 def verifySignature(signature, plainText):
-	hash = HMAC.new(verifySigKey)
-	hash.update(plainText, SHA256)
+	hash = HMAC.new(verifySigKey, plainText, SHA256)
 	if(hash.hexdigest() == signature):
-		return true
+		return True
 	else:
-		return false
+		return False
 
 def DH(bobvalue, g, p):
 	a = random.SystemRandom().randint(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, p-2)
@@ -149,7 +148,10 @@ def RSASign(message):
 
 def sendMessage(plainText):
 	signature = RSASign(plainText)
+	print "Signature: ", signature
 	cipherText = AESEnc(plainText)
+	print "CipherText: ", cipherText
+	print "Encryption key used is: ", encryptKey
 	data = (cipherText, signature)
 	pickleString = pickle.dumps(data, -1)
 	clientSocket.send(pickleString) # Alice sends Bob her last message - Server Line 159
