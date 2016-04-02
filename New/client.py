@@ -95,9 +95,9 @@ def DH(bobvalue, g, p):
 	tempSecretKey = DHSecretKey(bobvalue, a, p)
 	hash = SHA256.new()
 	hash.update(str(tempSecretKey))
-	longSecretKey = h.hexdigest()
+	longSecretKey = hash.hexdigest()
 	returnKey = longSecretKey[0:16]
-	connectionSocket.send(str(aliceValue))
+	clientSocket.send(str(aliceValue))
 	return returnKey
 
 cipherText = RSAEnc(encryptKey)
@@ -108,6 +108,16 @@ data = pickle.loads(pickleString)
 decryptKey = DH(data[0], data[1], data[2])
 print 'Encrypt Key" ', encryptKey
 print 'Decrypt Key: ', decryptKey
+
+signKey = str(os.urandom(16))
+signCipherText = RSAEnc(signKey)
+clientSocket.send(signTipherText)
+pickleString = clientSocket.recv(4096)
+# (bobvalue, g, p)
+data = pickle.loads(pickleString)
+verifySigKey = DH(data[0], data[1], data[2])
+print 'verifySigKey: ', verifySigKey
+print 'signature key: ', signKey
 
 # End assignment
 clientSocket.close()

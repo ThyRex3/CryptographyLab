@@ -103,8 +103,8 @@ def DH():
 	aliceValue = int(aliceValueStr)
 	tempSecretKey = DHSecretKey(aliceValue, b)
 	hash = SHA256.new()
-	h.update(str(tempSecretKey))
-	longSecretKey = h.hexdigest()
+	hash.update(str(tempSecretKey))
+	longSecretKey = hash.hexdigest()
 	returnKey = longSecretKey[0:16]
 	return returnKey
 
@@ -115,5 +115,10 @@ decryptKey = RSADec(cipherText)
 print 'Decrypt Key: ', decryptKey
 encryptKey = DH();
 print 'Encrypt Key: ', encryptKey
+
+aliceEncSignKey = connectionSocket.recv(4096)
+verifySigKey = RSADec(aliceEncSignKey)
+
+
 
 connectionSocket.close()
