@@ -118,7 +118,10 @@ print 'Encrypt Key: ', encryptKey
 
 aliceEncSignKey = connectionSocket.recv(4096)
 verifySigKey = RSADec(aliceEncSignKey)
-
+signKey = DH();
+#Is this pushed
+print 'verifySigKey: ', verifySigKey
+print 'signature key: ', signKey
 
 
 connectionSocket.close()
