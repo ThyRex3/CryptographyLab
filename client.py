@@ -138,10 +138,14 @@ cipher = AES.new(secret)
 
 #cipherText
 encoded = EncodeAES(cipher, secretMessage)
+print "Encoded: ", encoded
 #Hash the cipherText
 hash = SHA256.new(encoded).digest()
 #Sign the hashed cipherText
 signature = key.sign(hash, '')
+
+decoded = DecodeAES(cipher, encoded)
+print "Decoded: ", decoded
 
 s.close()
 #print 'Received', repr(data)
