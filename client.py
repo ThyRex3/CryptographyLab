@@ -69,28 +69,14 @@ EWa2+55yI6dYKDwkOXbyRfetaDiRJqvxBIUCpl9tTc0BafSfp8XDnFNtLIbVZoei
 G1BX5485bHGRqhXL7QIDAQAB
 -----END PUBLIC KEY-----"""
 
-alicePrivateKey = """-----BEGIN RSA PRIVATE KEY----- 
-MIICXgIBAAKBgQDAYIgVWXVsT3Y3zm3ZEtFKBnWMotD4eydxHSJSCw4gz1TOHEbB 
-UmDWbW4smzOfBorkGLVtXUUjrWU2fAtCak052cpkzX5QNO21ThghFKqzVc+AFt3q 
-AqjkufwXQUgU5U2qVMUofIMWi4g4CS135uEmJWtZLu2h3LRpY6W54rgFFwIDAQAB 
-AoGBAIE6Vy/AQFjZqBgk2zWOpniLjjtCxA2m7P/XCk8CjiMMI3OxGvaSV+qy5+ee 
-+jZBNtuynW0x0lf9CphnC0k6D1U6sEAvofqs4lMGdCjdcuLLvFVNOX1aNVrJmCYw 
-LX4DpCoYzmOjGJDIUOUeA22lleCdH5Q1g6gO3fh6SE1ETXZBAkEA6Ob1nt8ac2Rn 
-+ssoQWjxuGZC6aqKeq/peYLG38GGDzKQkR9+rm4WwVO4yh4WpLU3ak/FWhLi7fPz 
-HSm9RW/yHQJBANN0syYMtG/RaKDO0EAXj6kL0hQKU9VF8XE1uLk9t9BfCHn03HTs 
-1G2S5radDw02FZqunqQaKrR5PltSHw8ZrcMCQQCq00RSy+c1ve56R+p114h8LR1l 
-D/5UMJS52E8QLXyrxvW8S/J59Ctij4rZTKplErnbkzj4cSPbTnQB7uxxcsONAkEA 
-0AatAC/bi23+esU7hvIm+O2SHPkUBGss3m01b7fSEAKOOjy0batYSPwOUXUuC5c7 
-pdNIarT7clUdDYY63AYtNQJAGbFOol0mHNGOh3ufF38XQ1sSILQdeFbnxNOvtmV9 
-RA83pgJxFCREi70oz9yci8olUY5eJvqPBrcRI4UjqtV9uA==
- -----END RSA PRIVATE KEY-----"""
-
 alicePublicKey = """-----BEGIN PUBLIC KEY----- 
 MIGeMA0GCSqGSIb3DQEBAQUAA4GMADCBiAKBgH1LaxDblUH8MtKCq4HuqLHqcfFo 
 67939uV3Svfby3zfqDuWNJmWw7lNS0iRTQ8eQ4px6pDHGaN5oYrUU/TArYx1nTOd 
 M40nCEwDh+jf612jCAOykrgN+4RKjXqsctrPpHc8CfEEIBEVIUXBomd8iEzn/S62 
 TJCV9FmE9a+HiwDhAgMBAAE=
  -----END PUBLIC KEY-----"""
+
+alicePrivateKey = RSA.generate(1024, Random.new().read)
 
 DH_A = 29
 
@@ -130,8 +116,8 @@ secretMessage = ('a'*2000)
 secret = os.urandom(BLOCK_SIZE)
 
 # generate some key
-random_generator = Random.new().read
-key = RSA.generate(1024, random_generator)
+# random_generator = Random.new().read
+# key = RSA.generate(1024, random_generator)
 
 # create an AES cipher
 cipher = AES.new(secret)
@@ -142,7 +128,7 @@ print "Encoded: ", encoded
 #Hash the cipherText
 hash = SHA256.new(encoded).digest()
 #Sign the hashed cipherText
-signature = key.sign(hash, '')
+signature = alicePrivateKey.sign(hash, '')
 
 decoded = DecodeAES(cipher, encoded)
 print "Decoded: ", decoded
