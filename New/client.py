@@ -111,7 +111,7 @@ print 'Decrypt Key: ', decryptKey
 
 signKey = str(os.urandom(16))
 signCipherText = RSAEnc(signKey)
-clientSocket.send(signTipherText)
+clientSocket.send(signCipherText)
 pickleString = clientSocket.recv(4096)
 # (bobvalue, g, p)
 data = pickle.loads(pickleString)
