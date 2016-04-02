@@ -86,8 +86,48 @@ def RSAEnc(plainText):
 def DHCalc(a, g, p):
 	return pow(g, a, p)
 
+# 1 followed by 0's
+def addPadding(plainText):
+	padding = 16 - len(plainText) % 16
+	pad = "1"
+	while padding > 0:
+		message += pad
+		padding -= 1
+		pad = "0"
+	return message
+
+def remPadding(padPlainText):
+	position = len(padPlainText) - 1
+	count = 0
+	while position >= 0
+		if message[position] != '1';
+			position -= 1
+			count += 1
+		else:
+			count += 1
+			return padPlainText[:-count]
+	return message
+
+def AESEnc(plainText):
+	message = addPadding(plainText)
+	cipher = AES.new(encryptKey)
+	return cipher.encrypt(message)
+
+def AESDec(cipherText):
+	cipher = AES.new(decryptKey)
+	message = cipher.decrypt(cipherText)
+	return remPadding(message)
+
 def DHSecretKey(value, b, p):
 	return pow(value, b, p)
+
+def verifySignature(signature, plainText):
+	hash = HMAC.new(verifySigKey)
+	hash.update(plainText, SHA256)
+	if(hash.hexdigest() == signature):
+		return true
+	else:
+		return false
 
 def DH(bobvalue, g, p):
 	a = random.SystemRandom().randint(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, p-2)
@@ -99,6 +139,28 @@ def DH(bobvalue, g, p):
 	returnKey = longSecretKey[0:16]
 	clientSocket.send(str(aliceValue))
 	return returnKey
+
+def RSASign(message):
+	key = RSA.importKey(alicePrivateKey)
+	hash = SHA256.new()
+	hash.update(message)
+	return signer.sign(h)
+
+def sendMessage(plainText):
+	signature = RSASign(plainText)
+	cipherText = AESEnc(plainText)
+	data = (cipherText, signature)
+	pickleString = pickle.dumps(data, -1)
+	clientSocket.send(pickleString) # Alice sends Bob her last message - Server Line 159
+
+def recvMessage(message):
+	# (cipherText, signature)
+	data = pickle.loads(message)
+	plainText = AESDec(data[0])
+	if(verifySignature(data[1], plainText)):
+		print "Authentic Message: ", plainText
+	else:
+		print "Unauthenticated Message"
 
 cipherText = RSAEnc(encryptKey)
 clientSocket.send(cipherText)
@@ -112,12 +174,16 @@ print 'Decrypt Key: ', decryptKey
 signKey = str(os.urandom(16))
 signCipherText = RSAEnc(signKey)
 clientSocket.send(signCipherText)
-pickleString = clientSocket.recv(4096)
+pickleString2 = clientSocket.recv(4096)
 # (bobvalue, g, p)
-data = pickle.loads(pickleString)
-verifySigKey = DH(data[0], data[1], data[2])
+data2 = pickle.loads(pickleString2)
+verifySigKey = DH(data2[0], data2[1], data2[2])
 print 'verifySigKey: ', verifySigKey
 print 'signature key: ', signKey
+
+sendMessage(message)
+lastMessage = clientSocket.recv(4096)
+recvMessage(lastMessage)
 
 # End assignment
 clientSocket.close()

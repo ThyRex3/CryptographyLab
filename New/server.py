@@ -90,15 +90,57 @@ def RSADec(cipherText):
 def DHCalc(b):
 	return pow(g, b, p)
 
+# 1 followed by 0's
+def addPadding(plainText):
+	padding = 16 - len(plainText) % 16
+	pad = "1"
+	while padding > 0:
+		message += pad
+		padding -= 1
+		pad = "0"
+	return message
+
+def remPadding(padPlainText):
+	position = len(padPlainText) - 1
+	count = 0
+	while position >= 0
+		if message[position] != '1';
+			position -= 1
+			count += 1
+		else:
+			count += 1
+			return padPlainText[:-count]
+	return message
+
+def AESEnc(plainText):
+	messsage = addPadding(plainText)
+	cipher = AES.new(encryptKey)
+	return cipher.encrypt(message)
+
+def AESDec(cipherText):
+	cipher = AES.new(decryptKey)
+	message = cipher.decrypt(cipherText)
+	return remPadding(message)
+
 def DHSecretKey(value, b):
 	return pow(value, b, p)
+
+def verifySignature(signature, plainText):
+	key = RSA.importKey(alicePublicKey)
+	hash = SHA256.new()
+	hash.update(plainText)
+	verifier = PKCS1_PSS.new(key)
+	if verifier.verify(hash, signature):
+		return true
+	else:
+		return false
 
 def DH():
 	b = random.SystemRandom().randint(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, p-2)
 	bobValue = DHCalc(b)
 	data = (bobValue, g, p)
 	pickleString = pickle.dumps(data, -1)
-	connectionSocket.send(pickleString)
+	connectionSocket.send(pickleString) #Client.py -
 	aliceValueStr = connectionSocket.recv(4096)
 	aliceValue = int(aliceValueStr)
 	tempSecretKey = DHSecretKey(aliceValue, b)
@@ -108,6 +150,26 @@ def DH():
 	returnKey = longSecretKey[0:16]
 	return returnKey
 
+def HMACSign(plainText):
+	hash = HMAC.new(signKey)
+	h.update(plainText, SHA256)
+	return hash.hexdigest()
+
+def sendMessage(plainText):
+	signature = HMACSign(plainText)
+	cipherText = AESEn(plainText)
+	data = (cipherText, signature)
+	pickleString = pickle.dumps(data, -1)
+	connectionSocket.send(pickleString)
+
+def recvMessage(message):
+	# (cipherText, signature)
+	data = pickle.loads(message)
+	plainText = AESDec(data[0])
+	if(verifySignature(data[1], plainText)):
+		print "Authentic Message: ", plainText
+	else:
+		print "Unauthenticated Message: "
 
 # Receive a message that is supposedly Alice's RSA Encrypted Key
 cipherText = connectionSocket.recv(4096)
@@ -119,9 +181,11 @@ print 'Encrypt Key: ', encryptKey
 aliceEncSignKey = connectionSocket.recv(4096)
 verifySigKey = RSADec(aliceEncSignKey)
 signKey = DH();
-#Is this pushed
 print 'verifySigKey: ', verifySigKey
 print 'signature key: ', signKey
 
+lastMessage = connectionSocket.recv(4096)
+message = 'b' * 1000
 
+recvMessage(lastMessage)
 connectionSocket.close()
