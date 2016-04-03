@@ -5,15 +5,7 @@ from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Hash import HMAC, SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_PSS
-
-# Import socket library
 from socket import *
-
-# Global Variables - Empty strings
-encryptKey = ""		# Alice's encrypt = Bob's decrypt key
-decryptKey = ""
-signKey = ""		
-verifySigKey = ""
 
 # Set hostname or IP address from command line
 serverName = '127.0.0.1'
@@ -23,6 +15,12 @@ serverPort = 5711
 clientSocket = socket(AF_INET, SOCK_STREAM)
 #Connect oserver using hostname/IP and port
 clientSocket.connect((serverName, serverPort))
+
+# Global Variables - Empty strings
+encryptKey = ""	
+decryptKey = ""
+signKey = ""		
+verifySigKey = ""
 
 alicePrivateKey = """-----BEGIN RSA PRIVATE KEY-----
 MIIEoQIBAAKCAQBtZg6fW8hDisvVgj1BS7c1tyIvTYMq3ztvD1uYOF3sJz+WXwi1
@@ -72,21 +70,22 @@ tlM9Iq1+yB9cA0oW9sZwZ2aWK8pu0229slBq898mqOqlLhS4lNVluuQdlGmbYmk/
 AgMBAAE=
 -----END PUBLIC KEY-----"""
 
-# Start assignment
-# Step 1: Set up shared secret keys for encryption
 encryptKey = str(os.urandom(16))
 
 message = 'a'*2000
 
+# RSA Encryption of message from Alice to Bob
 def RSAEnc(plainText):
 	key = RSA.importKey(bobPublicKey)
 	cipher = PKCS1_OAEP.new(key, SHA256)
 	return cipher.encrypt(plainText)
 
+# g ^ a % p
 def DHCalc(a, g, p):
 	return pow(g, a, p)
 
-# 1 followed by 0'ss
+# Add padding for AES Encryption
+# 1 followed by 0's
 def addPadding(plainText):
 	padding = 16 - len(plainText) % 16
 	pad = "1"
@@ -96,6 +95,7 @@ def addPadding(plainText):
 		pad = "0"
 	return plainText
 
+# Remove padding (1 followed by 0's) for AES Decryption
 def remPadding(padPlainText):
 	position = len(padPlainText) - 1
 	count = 0
@@ -108,19 +108,24 @@ def remPadding(padPlainText):
 			return padPlainText[:-count]
 	return padPlainText
 
+# Add necessary padding before AES encryption
 def AESEnc(plainText):
 	message = addPadding(plainText)
 	cipher = AES.new(encryptKey)
 	return cipher.encrypt(message)
 
+# Decrypt cipherText before removal of padding
 def AESDec(cipherText):
 	cipher = AES.new(decryptKey)
 	message = cipher.decrypt(cipherText)
 	return remPadding(message)
 
+# value ^ b % p
 def DHSecretKey(value, b, p):
 	return pow(value, b, p)
 
+# Because Bob signed his message with HMAC,
+# this verify signature method is specific for HMAC signature
 def verifySignature(signature, plainText):
 	hash = HMAC.new(verifySigKey, plainText, SHA256)
 	if(hash.hexdigest() == signature):
@@ -128,6 +133,7 @@ def verifySignature(signature, plainText):
 	else:
 		return False
 
+# Diffie-Hellman Protocol
 def DH(bobvalue, g, p):
 	a = random.SystemRandom().randint(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, p-2)
 	aliceValue = DHCalc(a, g, p)
@@ -139,6 +145,7 @@ def DH(bobvalue, g, p):
 	clientSocket.send(str(aliceValue))
 	return returnKey
 
+# Hash encrypted message and then generate RSA signature for hash
 def RSASign(message):
 	key = RSA.importKey(alicePrivateKey)
 	hash = SHA256.new()
@@ -146,48 +153,77 @@ def RSASign(message):
 	signer = PKCS1_PSS.new(key)
 	return signer.sign(hash)
 
+# Send plainText message by generating a RSA signature for integrity
+# Encrypts plainText messsage via AES
 def sendMessage(plainText):
 	signature = RSASign(plainText)
-	print "Signature: ", signature
 	cipherText = AESEnc(plainText)
-	print "CipherText: ", cipherText
-	print "Encryption key used is: ", encryptKey
 	data = (cipherText, signature)
 	pickleString = pickle.dumps(data, -1)
-	clientSocket.send(pickleString) # Alice sends Bob her last message - Server Line 159
+	print "Alice's AES Encrypted Message CipherText: "
+	print cipherText
+	print
+	print "Bob's HMAC SHA-256 Hashed Message Signature: "
+	print signature
+	print
+	print "Alice's Encrypt Key: "
+	print encryptKey
+	print 
+	print "Alice's RSA Private Key: "
+	print alicePrivateKey
+	print
+	clientSocket.send(pickleString)
 
+# Receive cipherText from Bob to be decrypted and then verifies signature
 def recvMessage(message):
-	# (cipherText, signature)
+	# Data = (0) cipherText (1) signature
 	data = pickle.loads(message)
+	print "Received Bob's AES Encrypted Message (CipherText): "
+	print data[0]
+	print
+	print "Bob's HMAC SHA-256 Hashed Signature: "
+	print data[1]
 	plainText = AESDec(data[0])
 	if(verifySignature(data[1], plainText)):
-		print "Authentic Message: ", plainText
+		print
+		print "Authenticated Signature."
+		print "Printing plaintext message from Bob to Alice: "
+		print plainText 
+		print
+		print "Alice's Decrypt Key: "
+		print decryptKey
+		print
+		print "Alice's Verification Signature Key: "
+		print verifySigKey
+		print
 	else:
 		print "Unauthenticated Message"
+		print
 
 cipherText = RSAEnc(encryptKey)
 clientSocket.send(cipherText)
 pickleString = clientSocket.recv(4096)
-# (bobvalue, g, p)
+# Data = (0) bobvalue (1) p (2) g
 data = pickle.loads(pickleString)
 decryptKey = DH(data[0], data[1], data[2])
-print 'Encrypt Key: ', encryptKey
-print 'Decrypt Key: ', decryptKey
 
 signKey = str(os.urandom(16))
 signCipherText = RSAEnc(signKey)
 clientSocket.send(signCipherText)
 pickleString2 = clientSocket.recv(4096)
-# (bobvalue, g, p)
+# Data = (0) bobvalue (1) p (2) g
 data2 = pickle.loads(pickleString2)
 verifySigKey = DH(data2[0], data2[1], data2[2])
-print 'verifySigKey: ', verifySigKey
-print 'signature key: ', signKey
+print 'Signature key: ', signKey
+print
 
+# Send 2000 byte message from Alice to Bob
 sendMessage(message)
+# Receive 1000 byte message and signature from Bob to Alice
 lastMessage = clientSocket.recv(4096)
+# Decrypt ciphertext and receive signature
+# and print 1000 byte message from Bob to Alice
 recvMessage(lastMessage)
 
 # End assignment
 clientSocket.close()
-
